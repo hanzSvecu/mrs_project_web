@@ -51,17 +51,21 @@ test('workaround without Google search', async ({ page }) => {
   await expect(page).toHaveURL('https://www.morosystems.cz/kariera/')
   await page.getByRole('link', { name: 'Všechna města' }).click();
 
-  await page.waitForTimeout(1000); // jen dočasně pro diagnostiku
-  const positions = page.locator('#pozice');
-  const citySelect = positions.locator('.inp-custom-select');
-  const cityTrigger = citySelect.locator('a.inp-custom-select__select');
-  const cityWrapper = citySelect.locator('.inp-custom-select__wrapper');
+  const positionsSection  = page.locator('#pozice');
 
-  await cityTrigger.click();
-  await expect(citySelect).toHaveClass(/is-open/);
-  await expect(cityWrapper).toBeVisible();
+  const citySelect = positionsSection.locator('.c-positions__tools .inp-custom-select').first();
+  const cityTrigger = citySelect.locator('.inp-custom-select__select');
+  const cityDropdown = citySelect.locator('.inp-custom-select__wrapper');
 
-  const prahaOption = cityWrapper.locator('label[data-filter="Praha"]');
+  const classes = await citySelect.getAttribute('class');
+  if (!classes?.includes('is-open')) {
+    await cityTrigger.click();
+  }
+
+  await expect(citySelect).toContainClass('is-open');
+  await expect(cityDropdown).toBeVisible();
+
+  const prahaOption = cityDropdown.locator('label[data-filter="Praha"]');
   await expect(prahaOption).toBeVisible();
   await prahaOption.click();
 
