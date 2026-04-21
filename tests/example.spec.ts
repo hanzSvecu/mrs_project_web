@@ -27,8 +27,18 @@ test('workaround without Google search', async ({ page }) => {
 });
 
 
+/* Locator helper functions */
+const BASE_URL = 'https://www.morosystems.cz/';
+const CAREER_URL = `${BASE_URL}kariera/`;
 const POSITIONS_SECTION = '#pozice';
 const POSITION_ITEM = 'li.c-positions__item';
+
+// for localization support
+const NAV_LINKS = {
+  about: 'O nás',
+  career: 'Kariéra',
+  allCities: 'Všechna města',
+};
 
 function getPositionItems(
   page: Page,
@@ -42,28 +52,56 @@ function getPositionItems(
   }
 }
 
-async function openCareerPage(page: Page) {
-  await page.goto('https://www.morosystems.cz/');
-
+function getHeaderLocators(page: Page) {
   const menu = page.locator('#menu-hlavni-menu');
+
+  return {
+    menu,
+    aboutLink: menu.getByRole('link', { name: NAV_LINKS.about }),
+    careerLink: menu.getByRole('link', { name: NAV_LINKS.career }),
+  };
+}
+
+function getCareerPageLocators(page: Page) {
+  const positionsSection = page.locator(POSITIONS_SECTION);
+  const citySelect = positionsSection.locator('.c-positions__tools .inp-custom-select').first();
+
+  return {
+    positionsSection,
+    citySelect,
+    cityTrigger: citySelect.locator('.inp-custom-select__select'),
+    cityDropdown: citySelect.locator('.inp-custom-select__wrapper'),
+    allPositionItems: positionsSection.locator(POSITION_ITEM),
+    visiblePositionItems: positionsSection.locator(`${POSITION_ITEM}:not(.is-hidden)`),
+    hiddenPositionItems: positionsSection.locator(`${POSITION_ITEM}.is-hidden`),
+  };
+}
+
+
+/* Specific helper functions for the test case */
+async function openCareerPage(page: Page) {
+  const header = getHeaderLocators(page);
+  await page.goto(BASE_URL);
+
+  const menu = header.menu;
   await expect(menu).toBeVisible();
 
-  await menu.getByRole('link', { name: 'O nás' }).hover();
+  await header.aboutLink.hover();
 
-  const careerLink = menu.getByRole('link', { name: 'Kariéra' });
+  const careerLink = header.careerLink;
   await expect(careerLink).toBeVisible();
   await careerLink.click();
 
-  await expect(page).toHaveURL('https://www.morosystems.cz/kariera/');
+  await expect(page).toHaveURL(CAREER_URL);
 }
 
 async function selectCity(page: Page, city: string) {
-  await page.getByRole('link', { name: 'Všechna města' }).click();
-  const positionsSection  = page.locator(`${POSITIONS_SECTION}`);
+  await page.getByRole('link', { name: NAV_LINKS.allCities }).click();
+  const careerPage = getCareerPageLocators(page);
 
-  const citySelect = positionsSection.locator('.c-positions__tools .inp-custom-select').first();
-  const cityTrigger = citySelect.locator('.inp-custom-select__select');
-  const cityDropdown = citySelect.locator('.inp-custom-select__wrapper');
+  const citySelect = careerPage.citySelect;
+  const cityTrigger = careerPage.cityTrigger;
+  const cityDropdown = careerPage.cityDropdown;
 
   const classes = await citySelect.getAttribute('class');
   if (!classes?.includes('is-open')) {
