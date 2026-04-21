@@ -1,5 +1,4 @@
 import { test, expect, Page, Locator } from '@playwright/test';
-import { skip } from 'node:test';
 
 // problem with Google CAPTCHA - cannot proceed further; another test continues without Google search part in order to perform the task
 test.skip('original task with Google search', async ({ page }) => {
@@ -21,12 +20,27 @@ test.skip('original task with Google search', async ({ page }) => {
 
 test('workaround without Google search', async ({ page }) => {
   await openCareerPage(page);
-  
   await selectCity(page, 'Praha');
 
   await expectVisiblePositionsToContainCity(page, 'Praha');
   await expectHiddedPositionsToNotContainCity(page, 'Praha');
 });
+
+
+const POSITIONS_SECTION = '#pozice';
+const POSITION_ITEM = 'li.c-positions__item';
+
+function getPositionItems(
+  page: Page,
+  visibility: 'visible' | 'hidden',
+): Locator {
+  switch (visibility) {
+    case 'visible':
+      return page.locator(`${POSITIONS_SECTION} ${POSITION_ITEM}:not(.is-hidden)`);
+    case 'hidden':
+      return page.locator(`${POSITIONS_SECTION} ${POSITION_ITEM}.is-hidden`);
+  }
+}
 
 async function openCareerPage(page: Page) {
   await page.goto('https://www.morosystems.cz/');
@@ -45,7 +59,7 @@ async function openCareerPage(page: Page) {
 
 async function selectCity(page: Page, city: string) {
   await page.getByRole('link', { name: 'Všechna města' }).click();
-  const positionsSection  = page.locator('#pozice');
+  const positionsSection  = page.locator(`${POSITIONS_SECTION}`);
 
   const citySelect = positionsSection.locator('.c-positions__tools .inp-custom-select').first();
   const cityTrigger = citySelect.locator('.inp-custom-select__select');
@@ -64,22 +78,26 @@ async function selectCity(page: Page, city: string) {
   await cityOption.click();
 }
 
-async function expectVisiblePositionsToContainCity(page: Page, city: string) {
-  const visibleTexts = await page
-    .locator('#pozice li.c-positions__item:not(.is-hidden)')
-    .allTextContents();
+async function expectVisiblePositionsToContainCity(page: Page, city: string): Promise<void> {
+  const visibleItems = getPositionItems(page, 'visible');
+  const count = await visibleItems.count();
 
-  for (const text of visibleTexts) {
-    expect(text.trim()).toContain('Praha');
+  for (let i = 0; i < count; i++) {
+    const item = visibleItems.nth(i);
+    const filter = await item.getAttribute('data-filter');
+    const filterValue = filter != null ? filter : '';
+    expect(filterValue).toContain(city);
   }
 }
 
 async function expectHiddedPositionsToNotContainCity(page: Page, city: string) {
-  const hiddenTexts = await page
-  .locator('#pozice li.c-positions__item.is-hidden')
-  .allTextContents();
+  const hiddenItems = getPositionItems(page, 'hidden');
+  const count = await hiddenItems.count();
 
-  for (const text of hiddenTexts) {
-    expect(text.trim()).not.toContain('Praha');
+  for (let i = 0; i < count; i++) {
+    const item = hiddenItems.nth(i);
+    const filter = await item.getAttribute('data-filter');
+    const filterValue = filter != null ? filter : '';
+    expect(filterValue).not.toContain(city);
   }
 }
