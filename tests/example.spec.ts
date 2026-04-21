@@ -1,22 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page, Locator } from '@playwright/test';
 import { skip } from 'node:test';
-
-// test('has title', async ({ page }) => {
-//   await page.goto('https://playwright.dev/');
-
-//   // Expect a title "to contain" a substring.
-//   await expect(page).toHaveTitle(/Playwright/);
-// });
-
-// test('get started link', async ({ page }) => {
-//   await page.goto('https://playwright.dev/');
-
-//   // Click the get started link.
-//   await page.getByRole('link', { name: 'Get started' }).click();
-
-//   // Expects page to have a heading with the name of Installation.
-//   await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
-// });
 
 // problem with Google CAPTCHA - cannot proceed further; another test continues without Google search part in order to perform the task
 test.skip('original task with Google search', async ({ page }) => {
@@ -37,6 +20,15 @@ test.skip('original task with Google search', async ({ page }) => {
 
 
 test('workaround without Google search', async ({ page }) => {
+  await openCareerPage(page);
+  
+  await selectCity(page, 'Praha');
+
+  await expectVisiblePositionsToContainCity(page, 'Praha');
+  await expectHiddedPositionsToNotContainCity(page, 'Praha');
+});
+
+async function openCareerPage(page: Page) {
   await page.goto('https://www.morosystems.cz/');
 
   const menu = page.locator('#menu-hlavni-menu');
@@ -44,13 +36,15 @@ test('workaround without Google search', async ({ page }) => {
 
   await menu.getByRole('link', { name: 'O nás' }).hover();
 
-  const kariera = menu.getByRole('link', { name: 'Kariéra' });
-  await expect(kariera).toBeVisible();
-  await kariera.click();
+  const careerLink = menu.getByRole('link', { name: 'Kariéra' });
+  await expect(careerLink).toBeVisible();
+  await careerLink.click();
 
-  await expect(page).toHaveURL('https://www.morosystems.cz/kariera/')
+  await expect(page).toHaveURL('https://www.morosystems.cz/kariera/');
+}
+
+async function selectCity(page: Page, city: string) {
   await page.getByRole('link', { name: 'Všechna města' }).click();
-
   const positionsSection  = page.locator('#pozice');
 
   const citySelect = positionsSection.locator('.c-positions__tools .inp-custom-select').first();
@@ -65,18 +59,12 @@ test('workaround without Google search', async ({ page }) => {
   await expect(citySelect).toContainClass('is-open');
   await expect(cityDropdown).toBeVisible();
 
-  const prahaOption = cityDropdown.locator('label[data-filter="Praha"]');
-  await expect(prahaOption).toBeVisible();
-  await prahaOption.click();
+  const cityOption = cityDropdown.locator(`label[data-filter="${city}"]`);
+  await expect(cityOption).toBeVisible();
+  await cityOption.click();
+}
 
-  const hiddenTexts = await page
-    .locator('#pozice li.c-positions__item.is-hidden')
-    .allTextContents();
-
-  for (const text of hiddenTexts) {
-    expect(text.trim()).not.toContain('Praha');
-  }
-
+async function expectVisiblePositionsToContainCity(page: Page, city: string) {
   const visibleTexts = await page
     .locator('#pozice li.c-positions__item:not(.is-hidden)')
     .allTextContents();
@@ -84,4 +72,14 @@ test('workaround without Google search', async ({ page }) => {
   for (const text of visibleTexts) {
     expect(text.trim()).toContain('Praha');
   }
-});
+}
+
+async function expectHiddedPositionsToNotContainCity(page: Page, city: string) {
+  const hiddenTexts = await page
+  .locator('#pozice li.c-positions__item.is-hidden')
+  .allTextContents();
+
+  for (const text of hiddenTexts) {
+    expect(text.trim()).not.toContain('Praha');
+  }
+}
