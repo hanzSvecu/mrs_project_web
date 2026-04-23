@@ -1,31 +1,81 @@
 import { test, expect, Page, Locator } from '@playwright/test';
 
-// problem with Google CAPTCHA - cannot proceed further; another test continues without Google search part in order to perform the task
-test.skip('original task with Google search', async ({ page }) => {
-  await page.goto('https://www.google.com');
-  
-  const rejectButton = page.getByRole('button', { name: /Don't use Chrome|Stay in browser/i });
-  if (await rejectButton.isVisible().catch(() => false)) {
-    await rejectButton.click();
-  }
+/* Input type for adding cookies to the browser context */
+type CookieInput = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: 'Strict' | 'Lax' | 'None';
+};
 
-  await page.getByRole('combobox', { name: 'Search' }).fill('MoroSystems');
+/* Define test scenarios with different referer and cookie states */
+type Scenario = {
+  name: string;
+  referer?: string;
+  cookies?: CookieInput[];
+};
 
-  await Promise.all([
-    page.waitForURL(/google\.com\/search/),
-    page.locator('input[name="btnK"]:visible').click(),
-  ]);
-});
+/* Specific cookie for the page, representing user consent for cookies */
+const consentCookie: CookieInput = {
+  name: 'CookieScriptConsent',
+  value: JSON.stringify({
+    googleconsentmap: {
+      ad_storage: 'targeting',
+      analytics_storage: 'performance',
+      ad_user_data: 'targeting',
+      ad_personalization: 'targeting',
+      functionality_storage: 'functionality',
+      personalization_storage: 'functionality',
+      security_storage: 'functionality',
+    },
+    // bannershown: 1, // Uncomment if the banner visibility state needs to be explicitly set; default value is 1
+  }),
+  domain: '.morosystems.cz',
+  path: '/',
+  secure: true,
+  httpOnly: false,
+  sameSite: 'Lax',
+};
 
+/* Define test scenarios covering different combinations of referer and cookie states:
+1. Direct navigation without cookie
+2. Google referer without cookie
+3. Direct navigation with consent cookie
+4. Google referer with consent cookie */
+const scenarios: Scenario[] = [
+  {
+    name: 'direct without cookie',
+  },
+  {
+    name: 'google referer without cookie',
+    referer: 'https://www.google.com/',
+  },
+  {
+    name: 'direct with consent cookie',
+    cookies: [consentCookie],
+  },
+  {
+    name: 'google referer with consent cookie',
+    referer: 'https://www.google.com/',
+    cookies: [consentCookie],
+  },
+];
 
-test('workaround without Google search', async ({ page }) => {
-  await openCareerPage(page);
-  await selectCity(page, 'Praha');
+for (const scenario of scenarios) {
+  test(`workaround without Google search - ${scenario.name}`, async ({ context, page }) => {
+    if (scenario.cookies) {
+      await context.addCookies(scenario.cookies);
+    }
+    await openCareerPage(page, scenario.referer);
+    await selectCity(page, 'Praha');
 
-  await expectVisiblePositionsToContainCity(page, 'Praha');
-  await expectHiddedPositionsToNotContainCity(page, 'Praha');
-});
-
+    await expectVisiblePositionsToContainCity(page, 'Praha');
+    await expectHiddedPositionsToNotContainCity(page, 'Praha');
+  });
+}
 
 /* Locator helper functions */
 const BASE_URL = 'https://www.morosystems.cz/';
@@ -79,9 +129,9 @@ function getCareerPageLocators(page: Page) {
 
 
 /* Specific helper functions for the test case */
-async function openCareerPage(page: Page) {
+async function openCareerPage(page: Page, referer?: string) {
   const header = getHeaderLocators(page);
-  await page.goto(BASE_URL);
+  await page.goto(BASE_URL, { referer : referer || 'https://www.google.com/' });
 
   const menu = header.menu;
   await expect(menu).toBeVisible();

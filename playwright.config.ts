@@ -44,21 +44,10 @@ export default defineConfig({
       use: { ...devices['Desktop Firefox'] },
     },
 
-    // TODO: WebKit doesn't work, needs investigation
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
 
     /* Test against branded browsers; should be used for testing browser-specific features */
     {
@@ -69,6 +58,32 @@ export default defineConfig({
       name: 'Google Chrome',
       use: { ...devices['Desktop Chrome'], channel: 'chrome' },
     },
+
+    
+
+    // TODO: Reporting: Generate a detailed test report that includes pass/fail status, screenshotson failure, and logs.
+
+    /** TODO:
+      • Parallel Execution: Configure the tests for parallel execution to improve efficiency.
+      • Visual Testing: Implement visual testing to compare the current state of the
+      website with a baseline image.
+      • OpenAPI/Swagger codegen: Generate API connector with OpenAPI/Swagger
+      codegen.
+      • CI/CD Pipeline Integration: Integrate your tests into a CI/CD pipeline using a tool
+      like GitHub Actions, Jenkins, or another CI tool.
+    **/
+
+    // TODO: Responsive Design Check: Validate that the MoroSystems website and "Kariéra" page display correctly on different screen resolutions.
+    /* Test against mobile viewports. */
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+
   ],
 
   /* Run your local dev server before starting the tests */
