@@ -4,10 +4,44 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: 'pr | nightly | full | incomplete'
+        required: true
+        default: 'pr'
+        type: choice
+        options:
+          - pr
+          - nightly
+          - full
+          - incomplete
+      scenario:
+        description: 'Scenario'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - direct
+          - google
+          - directWithConsent
+          - googleWithConsent
 jobs:
-  test:
-    timeout-minutes: 60
+  e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # scenario: ${{ fromJson(inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || format('["{0}"]', inputs.scenario)) }}
+        scenario: ${{ fromJson(github.event_name == 'workflow_dispatch' && inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.scenario) || '["googleWithConsent"]') }}
+
+    env:
+      PW_RUN_MODE: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'schedule' && 'nightly' || inputs.run_mode }}
+      PW_SCENARIO: ${{ matrix.scenario }}
+
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -22,6 +56,6 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
-        name: playwright-report
+        name: playwright-report-${{ env.PW_RUN_MODE }}-${{ env.PW_SCENARIO }}
         path: playwright-report/
         retention-days: 30

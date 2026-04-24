@@ -4,6 +4,13 @@ function isMobile(page: Page): boolean {
   return (page.viewportSize()?.width ?? 0) < 1000; // Define mobile as width less than 1000px (got from empirical observation of the tested page)
 }
 
+type ScenarioName =
+  | 'direct'
+  | 'google'
+  | 'directWithConsent'
+  | 'googleWithConsent';
+
+
 /* Input type for adding cookies to the browser context */
 type CookieInput = {
   name: string;
@@ -44,42 +51,41 @@ const consentCookie: CookieInput = {
   sameSite: 'Lax',
 };
 
-/* Define test scenarios covering different combinations of referer and cookie states:
-1. Direct navigation without cookie
-2. Google referer without cookie
-3. Direct navigation with consent cookie
-4. Google referer with consent cookie */
-const scenarios: Scenario[] = [
-  {
+const scenarioName = (process.env.PW_SCENARIO ?? 'direct') as ScenarioName;
+
+const scenarios: Record<ScenarioName, Scenario> = {
+  direct: {
     name: 'direct without cookie',
   },
-  {
+  google: {
     name: 'google referer without cookie',
     referer: 'https://www.google.com/',
   },
-  {
+  directWithConsent: {
     name: 'direct with consent cookie',
     cookies: [consentCookie],
   },
-  {
+  googleWithConsent: {
     name: 'google referer with consent cookie',
     referer: 'https://www.google.com/',
     cookies: [consentCookie],
   },
-];
+};
 
-for (const scenario of scenarios) {
-  test(`workaround without Google search - ${scenario.name}`, async ({ context, page }) => {
-    if (scenario.cookies) {
-      await context.addCookies(scenario.cookies);
-    }
-    await openCareerPage(page, scenario.referer);
+const selectedScenario = scenarios[scenarioName];
+
+// for (const scenario of scenarios) {
+  test(`workaround without Google search - ${selectedScenario.name}`, async ({ context, page }) => {
+  if (selectedScenario.cookies?.length) {
+    await context.addCookies(selectedScenario.cookies);
+  }
+    await openCareerPage(page, selectedScenario.referer);
     await selectCity(page, 'Praha');
 
     await expectVisiblePositionsToContainCity(page, 'Praha');
     await expectHiddedPositionsToNotContainCity(page, 'Praha');
   });
-}
+// }
 
 /* Locator helper functions */
 const BASE_URL = 'https://www.morosystems.cz/';
