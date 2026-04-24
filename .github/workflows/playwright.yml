@@ -5,9 +5,9 @@ on:
   pull_request:
     branches: [ main, master ]
   schedule:
-    # Test of cron schedule: every day at 2am and every 5 minutes for testing purposes. Adjust as needed.
+    # Test of cron schedule: every day at 2am and different one for testing purposes. Adjust as needed.
     # - cron: '0 2 * * *'
-    - cron: '3/5 * * * *'
+    - cron: '17 */2 * * *'
   workflow_dispatch:
     inputs:
       run_mode:
