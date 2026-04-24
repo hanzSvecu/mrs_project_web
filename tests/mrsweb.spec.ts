@@ -1,5 +1,9 @@
 import { test, expect, Page, Locator } from '@playwright/test';
 
+function isMobile(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) < 1000; // Define mobile as width less than 1000px (got from empirical observation of the tested page)
+}
+
 /* Input type for adding cookies to the browser context */
 type CookieInput = {
   name: string;
@@ -31,7 +35,7 @@ const consentCookie: CookieInput = {
       personalization_storage: 'functionality',
       security_storage: 'functionality',
     },
-    // bannershown: 1, // Uncomment if the banner visibility state needs to be explicitly set; default value is 1
+    bannershown: 0, // Uncomment if the banner visibility state needs to be explicitly set; default value is 1
   }),
   domain: '.morosystems.cz',
   path: '/',
@@ -103,7 +107,17 @@ function getPositionItems(
 }
 
 function getHeaderLocators(page: Page) {
-  const menu = page.locator('#menu-hlavni-menu');
+    const menu = isMobile(page)
+    ? page.locator('#menu-main')
+    : page.locator('#menu-hlavni-menu');
+    /**
+      Oh my god, why there is this inconsistency? On mobile and tablet, the parent element is #menu-hlavni-menu,
+      for consistency and reusability I would expect #menu-main so it is inconsistent;
+      giving up mobile automation for this exercise.
+    **/
+    const careerLink = isMobile(page)
+    ? page.locator('#menu-hlavni-menu').getByRole('link', { name: NAV_LINKS.career })
+    : menu.getByRole('link', { name: NAV_LINKS.career });
 
   return {
     menu,
@@ -131,17 +145,18 @@ function getCareerPageLocators(page: Page) {
 /* Specific helper functions for the test case */
 async function openCareerPage(page: Page, referer?: string) {
   const header = getHeaderLocators(page);
-  await page.goto(BASE_URL, { referer : referer || 'https://www.google.com/' });
+  await page.goto(BASE_URL, { referer : referer });
 
   const menu = header.menu;
   await expect(menu).toBeVisible();
 
-  await header.aboutLink.hover();
+  if (!isMobile(page)) await header.aboutLink.hover();
 
   const careerLink = header.careerLink;
   await expect(careerLink).toBeVisible();
   await careerLink.click();
 
+  // expected fail for mobile and tablet due to the inconsistency in the menu structure
   await expect(page).toHaveURL(CAREER_URL);
 }
 
