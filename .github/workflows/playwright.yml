@@ -4,6 +4,10 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  schedule:
+    # Test of cron schedule: every day at 2am and every 5 minutes for testing purposes. Adjust as needed.
+    # - cron: '0 2 * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       run_mode:
@@ -35,11 +39,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # scenario: ${{ fromJson(inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || format('["{0}"]', inputs.scenario)) }}
         scenario: ${{ fromJson(github.event_name == 'workflow_dispatch' && inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.scenario) || '["googleWithConsent"]') }}
 
     env:
-      PW_RUN_MODE: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'schedule' && 'nightly' || inputs.run_mode }}
+      PW_RUN_MODE: ${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && inputs.run_mode || 'pr' }}
       PW_SCENARIO: ${{ matrix.scenario }}
 
     steps:
