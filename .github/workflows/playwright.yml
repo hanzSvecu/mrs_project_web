@@ -4,10 +4,10 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  schedule:
-    # Test of cron schedule: every day at 2am and different one for testing purposes. Adjust as needed.
+    # Test of Cron schedule: every day at 2am and different one for testing purposes. Prepared for future use.
+    # schedule:
     # - cron: '0 2 * * *'
-    - cron: '17 */2 * * *'
+
   workflow_dispatch:
     inputs:
       run_mode:
