@@ -33,18 +33,40 @@ on:
           - googleWithConsent
 jobs:
   e2e:
-    name: E2E / ${{ github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }} / ${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && inputs.run_mode || 'pr' }} / ${{ matrix.scenario }}
+    name: >-
+      E2E / 
+      ${{ 
+        github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }} / 
+      ${{ 
+        github.event_name == 'schedule' && 'nightly' || 
+        github.event_name == 'workflow_dispatch' && inputs.run_mode || 'pr' }} / 
+      ${{ 
+        matrix.scenario 
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
     strategy:
       fail-fast: false
       matrix:
-        # scenario: ${{ fromJson(github.event_name == 'workflow_dispatch' && inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.scenario) || '["googleWithConsent"]') }}
-        scenario: ${{ fromJson(github.event_name == 'schedule' && '["direct","google","directWithConsent","googleWithConsent"]' || github.event_name == 'workflow_dispatch' && inputs.scenario == 'all' && '["direct","google","directWithConsent","googleWithConsent"]' || github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.scenario) || '["googleWithConsent"]') }}
+        scenario: >- 
+          ${{ fromJson(
+            github.event_name == 'schedule' && 
+            '["direct","google","directWithConsent","googleWithConsent"]' || 
+            github.event_name == 'workflow_dispatch' && inputs.scenario == 'all' && 
+            '["direct","google","directWithConsent","googleWithConsent"]' || 
+            github.event_name == 'workflow_dispatch' && 
+            format('["{0}"]', inputs.scenario) || 
+            '["googleWithConsent"]'
+          ) }}
 
     env:
-      PW_RUN_MODE: ${{ github.event_name == 'schedule' && 'nightly' || github.event_name == 'workflow_dispatch' && inputs.run_mode || 'pr' }}
+      PW_RUN_MODE: >-
+        ${{ 
+          github.event_name == 'schedule' && 'nightly' || 
+          github.event_name == 'workflow_dispatch' && 
+          inputs.run_mode || 'pr' 
+        }}
       PW_SCENARIO: ${{ matrix.scenario }}
 
     steps:
