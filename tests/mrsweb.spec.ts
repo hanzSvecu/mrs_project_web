@@ -75,16 +75,16 @@ const scenarios: Record<ScenarioName, Scenario> = {
 const selectedScenario = scenarios[scenarioName];
 
 // for (const scenario of scenarios) {
-  test(`workaround without Google search - ${selectedScenario.name}`, async ({ context, page }) => {
+test(`workaround without Google search - ${selectedScenario.name}`, async ({ context, page }) => {
   if (selectedScenario.cookies?.length) {
     await context.addCookies(selectedScenario.cookies);
   }
-    await openCareerPage(page, selectedScenario.referer);
-    await selectCity(page, 'Praha');
+  await openCareerPage(page, selectedScenario.referer);
+  await selectCity(page, 'Praha');
 
-    await expectVisiblePositionsToContainCity(page, 'Praha');
-    await expectHiddedPositionsToNotContainCity(page, 'Praha');
-  });
+  await expectVisiblePositionsToContainCity(page, 'Praha');
+  await expectHiddedPositionsToNotContainCity(page, 'Praha');
+});
 // }
 
 /* Locator helper functions */
